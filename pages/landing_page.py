@@ -74,6 +74,7 @@ with col1:
 
         if st.button("Choose Repurpose", use_container_width=True):
             st.session_state.content_path = "repurpose"
+            st.session_state.current_step = 2  # Move to next step
 
 with col2:
     with st.container(border=True):
@@ -83,10 +84,12 @@ with col2:
 
         if st.button("Choose No idea Yet", use_container_width=True):
             st.session_state.content_path = "no_idea"
+            st.session_state.current_step = 2  # Move to next step
 
 
 # Show selected option
 if st.session_state.content_path == "repurpose":
+
     st.success("Selected path: Repurpose existing content")
 
 elif st.session_state.content_path == "no_idea":
