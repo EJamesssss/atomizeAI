@@ -89,7 +89,6 @@ with col2:
 
 # Show selected option
 if st.session_state.content_path == "repurpose":
-
     st.success("Selected path: Repurpose existing content")
 
 elif st.session_state.content_path == "no_idea":
