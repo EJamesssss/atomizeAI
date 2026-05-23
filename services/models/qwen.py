@@ -1,7 +1,7 @@
 import ollama
 import json
 
-MODEL_NAME = "qwen3:30b"
+MODEL_NAME = "qwen3:14b"
 
 import json
 
@@ -39,7 +39,8 @@ Use this exact JSON structure when asking a follow-up question:
     "cta": null,
     "length": null,
     "visual_style": null,
-    "aspect_ratio": null
+    "aspect_ratio": null,
+    "source_summary": null
   }
 }
 
@@ -53,7 +54,7 @@ Use this exact JSON structure when ready to route:
   "missing_details": [],
   "completed_prompt": "The complete prompt to send to the downstream model or service.",
   "metadata": {
-    "input_type": "article | photo | idea | product | campaign | mixed",
+    "input_type": "pdf | article | photo | idea | product | campaign | mixed",
     "output_type": "caption | image | image_and_caption",
     "platform": "Target platform",
     "audience": "Target audience",
@@ -63,7 +64,8 @@ Use this exact JSON structure when ready to route:
     "cta": "Call to action",
     "length": "Preferred length",
     "visual_style": "Visual style if needed",
-    "aspect_ratio": "Aspect ratio if needed"
+    "aspect_ratio": "Aspect ratio if needed",
+    "source_summary": "Summary of uploaded content if available"
   }
 }
 
@@ -77,6 +79,16 @@ Ask a maximum of 3 questions at a time.
 
 Use action = "response" when important details are missing.
 Use action = "route" when the request is ready for a downstream model.
+
+PDF ROUTING RULES:
+If uploaded_file.file_type is pdf:
+- If source_summary is missing, ask the user to wait while the app processes the PDF, or ask them to upload a readable PDF.
+- If source_summary exists, use it as the main source content.
+- The completed_prompt must include the source_summary and the user's preferences.
+- Route to caption_generator when output_type is caption.
+- Route to image_generator only if the user asks for image generation.
+- Route to image_and_caption_generator if the user wants both image and caption.
+- Do not claim that you can read the PDF directly. Use only the source_summary provided in router_state.
 
 route_to must be one of:
 - caption_generator
@@ -105,6 +117,7 @@ LATEST USER MESSAGE:
 
 FINAL INSTRUCTION:
 Using the router_state, conversation_history, and latest_user_message, decide whether to ask a follow-up question or route the request.
+If router_state contains uploaded_file.file_type = pdf and source_summary exists, treat the input_type as pdf and use the source_summary as the content source.
 
 Remember:
 - router_state is the source of truth.
