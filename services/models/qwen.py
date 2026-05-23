@@ -90,6 +90,17 @@ If uploaded_file.file_type is pdf:
 - Route to image_and_caption_generator if the user wants both image and caption.
 - Do not claim that you can read the PDF directly. Use only the source_summary provided in router_state.
 
+IMAGE ROUTING RULES:
+If uploaded_file.file_type is image:
+- If source_summary is missing, ask the app to process the image first.
+- If source_summary exists, use it as the main source content.
+- The completed_prompt must include the source_summary and the user's preferences.
+- Treat the input_type as photo, product, campaign, or mixed depending on the image and user request.
+- Route to caption_generator when output_type is caption.
+- Route to image_generator only if the user asks to create, edit, enhance, or generate an image.
+- Route to image_and_caption_generator if the user wants both a generated image and a caption.
+- Do not claim that you can see the image directly. Use only the source_summary provided in router_state.
+
 route_to must be one of:
 - caption_generator
 - image_generator
