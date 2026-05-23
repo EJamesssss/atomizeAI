@@ -6,6 +6,7 @@ from services.models.pdf_summarizer import summarize_pdf_for_repurposing
 from services.pdf.extractor import extract_pdf_text
 from utils.file_type_classifier import detect_file_type
 from services.models.caption_generator import generate_caption
+from services.models.image_analyzer import analyze_image_for_repurposing
 
 
 def safe_json_loads(raw_response: str):
@@ -49,11 +50,16 @@ def main():
         file_type = detect_file_type(file_upload)
 
         current_file_signature = f"{file_upload.name}-{file_upload.size}"
-
         previous_file_signature = st.session_state.router_state.get("file_signature")
 
         if current_file_signature != previous_file_signature:
             st.session_state.uploaded_file_processed = False
+
+            # Important: clear old file summary when a new file is uploaded
+            st.session_state.router_state.pop("source_summary", None)
+            st.session_state.router_state.pop("input_type", None)
+            st.session_state.router_state.pop("pdf_extract_status", None)
+            st.session_state.router_state.pop("image_analysis_status", None)
 
         st.session_state.router_state["uploaded_file"] = {
             "file_name": file_upload.name,
@@ -94,6 +100,29 @@ def main():
 
                     with st.expander("PDF summary preview"):
                         st.markdown(pdf_summary)
+
+        elif file_type == "image" and not st.session_state.uploaded_file_processed:
+            st.image(file_upload, caption="Uploaded image", use_container_width=True)
+
+            with st.spinner("Analyzing image..."):
+                image_summary = analyze_image_for_repurposing(
+                    uploaded_file=file_upload,
+                    router_state=st.session_state.router_state
+                )
+
+                st.session_state.router_state["source_summary"] = image_summary
+                st.session_state.router_state["input_type"] = "photo"
+                st.session_state.router_state["image_analysis_status"] = "analyzed"
+
+                st.session_state.uploaded_file_processed = True
+
+                with st.expander("Image analysis preview"):
+                    st.markdown(image_summary)
+
+        elif file_type == "image":
+            st.image(file_upload, caption="Uploaded image", use_container_width=True)
+
+        
 
     user_input = st.chat_input("What do you want to do?")
 
