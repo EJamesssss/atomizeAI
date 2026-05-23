@@ -174,9 +174,11 @@ def main():
                             "content": final_caption
                         })
 
-                st.markdown(st.session_state.router_state)
-                st.markdown("---")
-                st.markdown(raw_response)
+                # Uncomment for debugging router state and raw responses
+                # st.markdown("### Router State")
+                # st.markdown(st.session_state.router_state)
+                # st.markdown("---")
+                # st.markdown(raw_response)
 
 
 if __name__ == "__main__":
