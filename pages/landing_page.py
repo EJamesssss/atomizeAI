@@ -12,6 +12,15 @@ st.set_page_config(
     layout="wide"
 )
 
+# -----------------------------
+# SESSION STATE INITIALIZING
+# -----------------------------
+
+if "content_path" not in st.session_state:
+    st.session_state.content_path = None
+
+if "current_step" not in st.session_state:
+    st.session_state.current_step = 1
 
 # Header
 col1, col2 = st.columns([3, 1], width= 'stretch')
@@ -23,18 +32,6 @@ with col2:
     st.caption("MVP v1.0", text_alignment= 'right')
 
 st.divider()
-
-
-# -----------------------------
-# SESSION STATE INITIALIZING
-# -----------------------------
-
-if "content_path" not in st.session_state:
-    st.session_state.content_path = None
-
-if "current_step" not in st.session_state:
-    st.session_state.current_step = 1
-
 
 
 # Define steps
@@ -57,6 +54,7 @@ for i, step in enumerate(steps):
 
 
 st.divider()
+
 
 # Main question
 st.markdown("**WHAT DO YOU WANT TO DO TODAY?**", width="stretch")

@@ -22,7 +22,6 @@ with col2:
 
 st.divider()
 
-
 # -----------------------------
 # SESSION STATE INITIALIZING
 # -----------------------------
@@ -33,14 +32,10 @@ if "content_path" not in st.session_state:
 if "current_step" not in st.session_state:
     st.session_state.current_step = 2
 
+
 #Step 2 Requirements:
 # if st.session_state.content_path == "no_idea" and st.session_state.current_step == 2:
 
-# Define steps
-steps = ["Start", "Source/Context", "Preferences", "Generate", "Revise", "Export"]
-
-# Step indicator
-step_cols = st.columns(len(steps) * 2 - 1)  # Add space 
 
 # Define steps
 steps = ["Start", "Source/Context", "Preferences", "Generate", "Revise", "Export"]
@@ -62,6 +57,8 @@ for i, step in enumerate(steps):
 
 st.divider()
 
+
+
 # -----------------------------
 # STEP 2 INPUT CONTENT AREA
 # -----------------------------
@@ -78,10 +75,10 @@ st.session_state.main_topic = st.text_input(
     "Main Topic /Idea:", placeholder="e.g., “Skincare product launch” ", max_chars =  150,
     value=st.session_state.get("main_topic", "")
 )
-st.session_state.content_type = st.text_input(
-    "Content Type /Goal:", placeholder="e.g., “Product description”, “Social media caption” ", max_chars =  150,
-    value=st.session_state.get("content_type", "")
-)
+# st.session_state.content_type = st.text_input(
+#     "Content Type /Goal:", placeholder="e.g., “Product description”, “Social media caption” ", max_chars =  150,
+#     value=st.session_state.get("content_type", "")
+# )
 st.session_state.keywords = st.text_input(
     "Keywords /Key Phrases: ", placeholder=" e.g., “affordable, glowing skin, Filipino seller” ", max_chars =  250,
     value=st.session_state.get("keywords", "")
@@ -91,18 +88,18 @@ st.session_state.background = st.text_area(
     value=st.session_state.get("background", ""), 
     height=100
 )
-st.session_state.target_audience = st.text_input(
-    "Target Audience", placeholder=" e.g., “Online sellers, boutique agencies, young moms” ",  max_chars =  250,
-    value=st.session_state.get("target_audience", "")
-)
+# st.session_state.target_audience = st.text_input(
+#     "Target Audience", placeholder=" e.g., “Online sellers, boutique agencies, young moms” ",  max_chars =  250,
+#     value=st.session_state.get("target_audience", "")
+# )
 st.session_state.key_message = st.text_input(
-    "Key Message / Call-to-Action", placeholder=" e.g., “affordable, glowing skin, Filipino seller” ", max_chars =  500,
+    "Key Message / Call-to-Action", placeholder=" e.g., “Promote a new skincare product for Filipino online sellers” ", max_chars =  500,
     value=st.session_state.get("key_message", "")
 )
-st.session_state.word_count = st.text_input(
-    "Approximate Word Count (optional)", placeholder=" e.g., “around 100 words” ", max_chars =  100, 
-    value=st.session_state.get("word_count", "")
-)
+# st.session_state.word_count = st.text_input(
+#     "Approximate Word Count (optional)", placeholder=" e.g., “around 100 words” ", max_chars =  100, 
+#     value=st.session_state.get("word_count", "")
+# )
 
 st.divider()
 

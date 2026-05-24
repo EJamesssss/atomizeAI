@@ -22,7 +22,6 @@ with col2:
 
 st.divider()
 
-
 # -----------------------------
 # SESSION STATE INITIALIZING
 # -----------------------------
@@ -38,8 +37,7 @@ if "article_text" not in st.session_state:
 
 if "uploaded_file" not in st.session_state:
     st.session_state.uploaded_file = None
-
-
+    
 #Step 2 Requirements:
 # if st.session_state.content_path == "repurpose" and st.session_state.current_step == 2:
 
@@ -62,6 +60,8 @@ for i, step in enumerate(steps):
         step_cols[i*2 +1].markdown("<div style='height:2px; background-color:#ccc; margin-top:16px;'></div>", unsafe_allow_html=True)
 
 st.divider()
+
+
 
 # -----------------------------
 # STEP 2 INPUT CONTENT AREA
