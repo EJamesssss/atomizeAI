@@ -31,21 +31,28 @@ if "content_path" not in st.session_state:
     st.session_state.content_path = None
 
 if "current_step" not in st.session_state:
-    st.session_state.current_step = 3
+    st.session_state.current_step = 2
 
-# Step 3 preference defaults
-if "platform" not in st.session_state:
-    st.session_state.platform = ""
-if "output_type" not in st.session_state:
-    st.session_state.output_type = ""
-if "tone" not in st.session_state:
-    st.session_state.tone =   ""  
-if "length" not in st.session_state:
-    st.session_state.length = ""
-if "language" not in st.session_state:
-    st.session_state.language = ""
-if "target_audience_preferences" not in st.session_state:
-    st.session_state.target_audience_preferences = ""
+# Step 3 default values
+defaults = {
+    "platform": "Facebook",
+    "output_type": "Caption",
+    "target_audience": "",
+    "tone": "Friendly",
+    "length": "Medium",
+    "language": "English"
+}
+
+for key, value in defaults.items():
+    if key not in st.session_state:
+        st.session_state[key] = value
+
+# Triggers for navigation buttons
+if "step3_back_trigger" not in st.session_state:
+    st.session_state.step3_back_trigger = False
+if "step3_next_trigger" not in st.session_state:
+    st.session_state.step3_next_trigger = False
+
 
 
 
@@ -60,18 +67,19 @@ steps = ["Start", "Source/Context", "Preferences", "Generate", "Revise", "Export
 step_cols = st.columns(len(steps) * 2 - 1)  # Add space 
 
     
+# Stepper 4 steps
+steps = ["Start", "Source/Context", "Preferences", "Generate"]
+step_cols = st.columns(len(steps)*2-1)
 for i, step in enumerate(steps):
-# Current step: filled circle using CSS for styling
-    if i == st.session_state.current_step - 1:
-        step_cols[i*2].markdown(f"<div style='text-align:center'><span style='font-size:24px; background-color:#000; color:#fff; border-radius:50%; width:32px; height:32px; display:inline-block; line-height:32px'>{i+1}</span><br>{step}</div>", unsafe_allow_html=True)
+    if i == 3:
+        step_cols[i*2].markdown(
+            f"<div style='text-align:center'><span style='font-size:24px; background-color:#000; color:#fff; border-radius:50%; width:32px; height:32px; display:inline-block; line-height:32px'>{i+1}</span><br>{step}</div>",
+            unsafe_allow_html=True
+        )
     else:
-        # Other steps: outlined circle
-        step_cols[i*2].markdown(f"<div style='text-align:center'><span style='font-size:24px; border:2px solid #ccc; border-radius:50%; width:32px; height:32px; display:inline-block; line-height:32px'>{i+1}</span><br>{step}</div>", unsafe_allow_html=True)
-        
-    # Add connecting line between steps
-    if i < len(steps) -1:
-        step_cols[i*2 +1].markdown("<div style='height:2px; background-color:#ccc; margin-top:16px;'></div>", unsafe_allow_html=True)
-
+        step_cols[i*2].markdown(f"<div style='text-align:center; color:#ccc'>{i+1}<br>{step}</div>", unsafe_allow_html=True)
+    if i < len(steps)-1:
+        step_cols[i*2+1].markdown("<div style='height:2px; background-color:#ccc; margin-top:16px;'></div>", unsafe_allow_html=True)
 st.divider()
 
 # -----------------------------
@@ -83,23 +91,25 @@ st.info(
 )
 
 # Platform selection
-st.session_state.platform = st.multiselect(
-    "Platform", max_selections=1, placeholder="Select your platform...",
+st.session_state.platform = st.selectbox(
+    "Platform",
     options=["Facebook", "Instagram", "TikTok", "LinkedIn", "Blog"],
-    default=st.session_state.platform
+    index=["Facebook", "Instagram", "TikTok", "LinkedIn", "Blog"].index(st.session_state.platform)
 )
 
 # Output type
-st.session_state.output_type = st.multiselect(
-    "Output Type", max_selections=1, placeholder="Select your output type...",
+st.session_state.output_type = st.selectbox(
+    "Output Type",
     options=["Caption", "Script", "Article", "Carousel copy", "Thread"],
-    default=st.session_state.output_type
+    index=["Caption", "Script", "Article", "Carousel copy", "Thread"].index(st.session_state.output_type)
 )
 
 # Target audience
-st.session_state.target_audience_preferences = st.text_input(
-    "Target Audience", max_chars= 100, placeholder="e.g., “Online sellers, boutique agencies, young moms” ",
-    value=st.session_state.target_audience_preferences
+st.session_state.target_audience = st.text_input(
+    "Target Audience",
+    max_chars=100,
+    placeholder="e.g., Online sellers, boutique agencies, young moms",
+    value=st.session_state.target_audience
 )
 
 # Tone
@@ -126,15 +136,35 @@ st.session_state.language = st.radio(
 # -----------------------------
 # NAVIGATION BUTTONS
 # -----------------------------
-
 col1, col2, col3 = st.columns([1, 10, 1])
-
 with col1:
     if st.button("← Back"):
-            st.session_state.current_step = 3 # Return to Step 3
-
+        st.session_state.step3_back_trigger = True
 with col3:
     if st.button("Next →"):
-            st.session_state.current_step = 4  # Advance to Step 4
-            st.session_state.content_path  =  "generate"  # Set content path to generate for next step
+        st.session_state.step3_next_trigger = True
+
+# -----------------------------
+# PROCESS TRIGGERS
+# -----------------------------
+# Go back to Step 2
+if st.session_state.step3_back_trigger:
+    st.session_state.current_step = 2
+    st.session_state.step3_back_trigger = False
+    
+
+# Advance to Step 4 and save preferences
+if st.session_state.step3_next_trigger:
+    st.session_state.current_step = 4
+    st.session_state.step3_next_trigger = False
+    st.session_state.content_path = "generate"
+    # Save all Step 3 preferences to llm_prompt_inputs
+    st.session_state.llm_prompt_inputs["step3_preferences"] = {
+        "platform": st.session_state.platform,
+        "output_type": st.session_state.output_type,
+        "target_audience": st.session_state.target_audience,
+        "tone": st.session_state.tone,
+        "length": st.session_state.length,
+        "language": st.session_state.language
+    }
 
