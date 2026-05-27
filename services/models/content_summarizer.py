@@ -2,7 +2,7 @@ import time
 import ollama
 
 
-MODEL_NAME = "qwen2.5:7b"
+MODEL_NAME = "qwen3:8b"
 DEBUG_ANALYZER = True
 
 
