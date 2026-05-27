@@ -1,5 +1,9 @@
 import streamlit as st
 
+from utils.session import get_payload
+
+st.session_state.current_step = 2
+
 # -----------------------------
 # SESSION STATE INIT
 # -----------------------------
@@ -91,19 +95,17 @@ with col3:
 # Back to Step 1
 if st.session_state.step2_back_trigger:
     st.session_state.current_step = 1
-    st.switch_page("pages/step1_home.py")
     st.session_state.step2_back_trigger = False
+    st.switch_page("pages/step1_home.py")
     
 
 # Next to Step 3
 if st.session_state.step2_next_trigger:
     st.session_state.current_step = 3
     st.session_state.step2_next_trigger = False
-    st.session_state.content_path = "preferences"
-    # Update dictionary
-    if "step2_context" not in st.session_state.llm_prompt_inputs:
-        st.session_state.llm_prompt_inputs["step2_context"] = {}
-    st.session_state.llm_prompt_inputs["step2_context"]["article_text"] = st.session_state.article_text
-    st.session_state.llm_prompt_inputs["step2_context"]["uploaded_file"] = st.session_state.uploaded_file
+
+
     st.switch_page("pages/step3_preferences.py")
-   
+
+
+st.json(get_payload(), expanded=True)
