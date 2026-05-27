@@ -1,5 +1,20 @@
 from services.extractors.file_text_extractor import extract_text_from_uploaded_file
 from services.models.content_summarizer import summarize_content_for_repurposing
+from services.models.image_analyzer import analyze_image_for_repurposing
+
+
+IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png"]
+DOCUMENT_EXTENSIONS = [".pdf", ".docx", ".txt"]
+
+
+def is_image_file(uploaded_file):
+    file_name = uploaded_file.name.lower()
+    return any(file_name.endswith(ext) for ext in IMAGE_EXTENSIONS)
+
+
+def is_document_file(uploaded_file):
+    file_name = uploaded_file.name.lower()
+    return any(file_name.endswith(ext) for ext in DOCUMENT_EXTENSIONS)
 
 
 def analyze_repurpose_input(
@@ -7,31 +22,40 @@ def analyze_repurpose_input(
     uploaded_file=None,
     router_state: dict | None = None
 ) -> dict:
-    """
-    Builds the Step 2 repurpose payload.
-
-    Accepts:
-    - pasted text only
-    - uploaded file only
-    - pasted text + uploaded file
-    """
-
     router_state = router_state or {}
     article_text = article_text.strip() if article_text else ""
 
     if not article_text and uploaded_file is None:
         raise ValueError("Please paste content or upload a file before proceeding.")
 
+    uploaded_file_name = uploaded_file.name if uploaded_file else None
+    uploaded_file_type = uploaded_file.type if uploaded_file else None
+    uploaded_file_size = uploaded_file.size if uploaded_file else None
+
+    if uploaded_file is not None and is_image_file(uploaded_file):
+        image_brief = analyze_image_for_repurposing(
+            uploaded_file=uploaded_file,
+            router_state=router_state
+        )
+
+        return {
+            "content_path": "repurpose",
+            "source_type": "text_and_image" if article_text else "image",
+            "article_text": article_text if article_text else None,
+            "uploaded_file_name": uploaded_file_name,
+            "uploaded_file_type": uploaded_file_type,
+            "uploaded_file_size": uploaded_file_size,
+            "extracted_text": article_text if article_text else "",
+            "content_brief": image_brief
+        }
+
     extracted_file_text = ""
-    uploaded_file_name = None
-    uploaded_file_type = None
-    uploaded_file_size = None
 
     if uploaded_file is not None:
+        if not is_document_file(uploaded_file):
+            raise ValueError("Unsupported file type. Please upload PDF, DOCX, TXT, JPG, JPEG, or PNG.")
+
         extracted_file_text = extract_text_from_uploaded_file(uploaded_file)
-        uploaded_file_name = uploaded_file.name
-        uploaded_file_type = uploaded_file.type
-        uploaded_file_size = uploaded_file.size
 
     if article_text and extracted_file_text:
         source_type = "text_and_file"

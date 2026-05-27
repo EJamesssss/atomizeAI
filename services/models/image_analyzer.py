@@ -1,62 +1,86 @@
-import base64
+import os
+import tempfile
+import time
 import ollama
 
 
-MODEL_NAME = "qwen2.5vl:7b"
+VISION_MODEL_NAME = "qwen2.5vl:7b"
+DEBUG_ANALYZER = True
 
 
-def analyze_image_for_repurposing(uploaded_file, router_state: dict) -> str:
-    """
-    Analyze an uploaded image and return a content brief for repurposing.
-    """
+def debug_print(label, start_time):
+    if DEBUG_ANALYZER:
+        elapsed = time.perf_counter() - start_time
+        print(f"[DEBUG] {label}: {elapsed:.2f} seconds")
 
-    uploaded_file.seek(0)
-    image_bytes = uploaded_file.read()
-    image_base64 = base64.b64encode(image_bytes).decode("utf-8")
 
-    system_prompt = """
+def analyze_image_for_repurposing(uploaded_file, router_state=None) -> str:
+    router_state = router_state or {}
+    total_start = time.perf_counter()
+
+    suffix = os.path.splitext(uploaded_file.name)[1]
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
+        temp_file.write(uploaded_file.getvalue())
+        temp_file_path = temp_file.name
+
+    debug_print("Image saved to temp file", total_start)
+
+    try:
+        system_prompt = """
 You are an image analysis assistant for a content repurposing application.
 
-Your job is to analyze the uploaded image and convert it into a useful content brief.
+Analyze the uploaded image and create a concise content brief.
 
-Do not write the final caption yet.
-Do not create an image prompt yet.
+Do not create the final caption.
+Do not create the final social media post.
 
-Return a structured image summary that can help another model create a social media caption.
+Return only this format:
 
-Include:
-1. Main subject
-2. Visible objects or products
-3. Scene or environment
-4. Mood or emotion
-5. Possible marketing angle
-6. Suggested caption hooks
-7. Important visual details to mention
-8. What should not be assumed
+Visible elements:
+Main subject:
+Text visible in image:
+Brand/product clues:
+Possible message:
+Target audience clues:
+Suggested content angles:
+Suggested hook ideas:
+Avoid / do not misrepresent:
 """
 
-    user_prompt = f"""
-USER PREFERENCES / ROUTER STATE:
+        user_prompt = f"""
+Router state:
 {router_state}
 
-TASK:
-Analyze this uploaded image for social media content repurposing.
-Create a clear image summary that can be used to generate a caption based on the user's platform, tone, goal, language, CTA, and length preferences.
+Analyze this image for content repurposing.
 """
 
-    response = ollama.chat(
-        model=MODEL_NAME,
-        messages=[
-            {
-                "role": "system",
-                "content": system_prompt,
-            },
-            {
-                "role": "user",
-                "content": user_prompt,
-                "images": [image_base64],
-            },
-        ],
-    )
+        ollama_start = time.perf_counter()
 
-    return response["message"]["content"]
+        response = ollama.chat(
+            model=VISION_MODEL_NAME,
+            messages=[
+                {
+                    "role": "system",
+                    "content": system_prompt
+                },
+                {
+                    "role": "user",
+                    "content": user_prompt,
+                    "images": [temp_file_path]
+                }
+            ],
+            options={
+                "temperature": 0.2,
+                "num_predict": 400
+            }
+        )
+
+        debug_print("Qwen2.5-VL image analysis completed", ollama_start)
+        debug_print("Total image analyzer duration", total_start)
+
+        return response["message"]["content"]
+
+    finally:
+        if os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
