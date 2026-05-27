@@ -1,132 +1,318 @@
-
 import streamlit as st
 import time
+
+from utils.session import get_payload, update_payload
+
+
+st.session_state.current_step = 4
+
 
 # -----------------------------
 # SESSION STATE INIT
 # -----------------------------
-# if "current_step" not in st.session_state:
-#     st.session_state.current_step = 4
-# if "llm_prompt_inputs" not in st.session_state:
-#     st.session_state.llm_prompt_inputs = {}
-
-# Triggers
 for trigger in ["generate_trigger", "revise_trigger", "image_trigger", "new_content_trigger"]:
     if trigger not in st.session_state:
         st.session_state[trigger] = False
 
+if "generated_content" not in st.session_state:
+    st.session_state.generated_content = ""
+
+
 # -----------------------------
-# HEADER & STEP INDICATOR
+# HEADER
 # -----------------------------
-col1, col2 = st.columns([3,1])
+col1, col2 = st.columns([3, 1], width="stretch")
+
 with col1:
     st.header(" ⚛️ AtomizeAI")
+
 with col2:
-    st.caption("MVP v1.0", text_alignment='right')
+    st.caption("MVP v1.0", text_alignment="right")
+
 st.divider()
 
-# Stepper - 4 steps
+
+# -----------------------------
+# STEP INDICATOR
+# -----------------------------
 steps = ["Start", "Source/Context", "Preferences", "Generate"]
-step_cols = st.columns(len(steps)*2-1)
+step_cols = st.columns(len(steps) * 2 - 1)
+
 for i, step in enumerate(steps):
-    if i == 3:  # Highlight Step 4
-        step_cols[i*2].markdown(
-            f"<div style='text-align:center'><span style='font-size:24px; background-color:#000; color:#fff; border-radius:50%; width:32px; height:32px; display:inline-block; line-height:32px'>{i+1}</span><br>{step}</div>",
+    if i == st.session_state.current_step - 1:
+        step_cols[i * 2].markdown(
+            f"<div style='text-align:center'><span style='font-size:24px; background-color:#000; color:#fff; "
+            f"border-radius:50%; width:32px; height:32px; display:inline-block; line-height:32px'>{i + 1}</span><br>{step}</div>",
             unsafe_allow_html=True
         )
     else:
-        step_cols[i*2].markdown(
-            f"<div style='text-align:center; color:#ccc'>{i+1}<br>{step}</div>",
+        step_cols[i * 2].markdown(
+            f"<div style='text-align:center; color:#ccc'>{i + 1}<br>{step}</div>",
             unsafe_allow_html=True
         )
-    if i < len(steps)-1:
-        step_cols[i*2+1].markdown("<div style='height:2px; background-color:#ccc; margin-top:16px;'></div>", unsafe_allow_html=True)
+
+    if i < len(steps) - 1:
+        step_cols[i * 2 + 1].markdown(
+            "<div style='height:2px; background-color:#ccc; margin-top:16px;'></div>",
+            unsafe_allow_html=True
+        )
+
 st.divider()
 
-# -----------------------------
-# STEP 4: DYNAMIC PREVIEW
-# -----------------------------
-st.info("Preview all your inputs from Step 2 and Step 3. Edit if needed before generating content.")
-inputs = st.session_state.llm_prompt_inputs
-
-# ---- Step 2 inputs depending on path ----
-if st.session_state.content_path == "repurpose":
-    st.subheader("Step 2: Repurpose Content")
-    inputs["article_text"] = st.text_area("Article / Content:", value=inputs.get("article_text",""), height=200)
-    inputs["uploaded_file"] = st.file_uploader("Uploaded file:", type=["jpg","png","pdf","docx"], key="step4_repurpose_file")
-elif st.session_state.content_path == "no_idea":
-    st.subheader("Step 2: Context Inputs (No Idea)")
-    for key, label, height in [
-        ("main_topic", "Main Topic / Idea:", None),
-        ("keywords", "Keywords / Key Phrases:", None),
-        ("background", "Background / Description:", 100),
-        ("key_message", "Key Message / CTA:", None)
-    ]:
-        if height:
-            inputs[key] = st.text_area(label, value=inputs.get(key,""), height=height)
-        else:
-            inputs[key] = st.text_input(label, value=inputs.get(key,""))
-
-# ---- Step 3 Preferences ----
-st.subheader("Step 3: Preferences")
-inputs["platform"] = st.selectbox("Platform:", ["Facebook","Instagram","TikTok","LinkedIn","Blog"], index=["Facebook","Instagram","TikTok","LinkedIn","Blog"].index(inputs.get("platform","Facebook")))
-inputs["output_type"] = st.selectbox("Output Type:", ["Caption","Script","Article","Carousel copy","Thread"], index=["Caption","Script","Article","Carousel copy","Thread"].index(inputs.get("output_type","Caption")))
-inputs["target_audience"] = st.text_input("Target Audience:", value=inputs.get("target_audience",""))
-inputs["tone"] = st.radio("Tone:", ["Friendly","Professional","Casual","Persuasive","Educational"], index=["Friendly","Professional","Casual","Persuasive","Educational"].index(inputs.get("tone","Friendly")))
-inputs["length"] = st.radio("Length:", ["Short","Medium","Long"], index=["Short","Medium","Long"].index(inputs.get("length","Medium")))
-inputs["language"] = st.radio("Language:", ["English","Tagalog","Taglish"], index=["English","Tagalog","Taglish"].index(inputs.get("language","English")))
-
-st.session_state.llm_prompt_inputs = inputs
 
 # -----------------------------
-# GENERATE CONTENT BUTTON
+# GET PAYLOAD
 # -----------------------------
-if not st.session_state.generate_trigger:
-    if st.button("Generate Content", use_container_width=True):
-        st.session_state.generate_trigger = True
-        with st.spinner("Generating content... ⌛"):
-            time.sleep(2)
-        st.success("Content generated! Dictionary sent to backend:")
-        st.code(st.session_state.llm_prompt_inputs)
+payload = get_payload()
+
 
 # -----------------------------
-# POST-GENERATION BUTTONS
+# PAGE INTRO
 # -----------------------------
-if st.session_state.generate_trigger:
-    if not st.session_state.revise_trigger:
+st.info(
+    "Review the content analysis and your selected preferences before generating the final content."
+)
+
+
+# -----------------------------
+# SOURCE / ANALYSIS SUMMARY
+# -----------------------------
+st.subheader("Source / Content Analysis")
+
+source_type = payload.get("source_type", "Not provided")
+content_path = payload.get("content_path", "Not provided")
+uploaded_file_name = payload.get("uploaded_file_name")
+uploaded_file_type = payload.get("uploaded_file_type")
+uploaded_file_size = payload.get("uploaded_file_size")
+article_text = payload.get("article_text")
+content_brief = payload.get("content_brief")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    st.markdown("**Content Path:**")
+    st.write(content_path)
+
+    st.markdown("**Source Type:**")
+    st.write(source_type)
+
+with col2:
+    st.markdown("**Uploaded File:**")
+    st.write(uploaded_file_name or "No uploaded file")
+
+    if uploaded_file_type:
+        st.markdown("**File Type:**")
+        st.write(uploaded_file_type)
+
+    if uploaded_file_size:
+        st.markdown("**File Size:**")
+        st.write(f"{uploaded_file_size:,} bytes")
+
+
+if article_text:
+    with st.expander("View pasted text"):
+        st.write(article_text)
+
+
+if content_brief:
+    st.markdown("### AI Content Analysis")
+    st.text_area(
+        "Content Brief",
+        value=content_brief,
+        height=300,
+        disabled=True
+    )
+else:
+    st.warning("No content analysis found. Please go back to Step 2 and analyze your content first.")
+
+
+st.divider()
+
+
+# -----------------------------
+# STEP 3 PREFERENCES SUMMARY
+# -----------------------------
+st.subheader("Selected Preferences")
+
+preferences = {
+    "Platform": payload.get("platform", "Not provided"),
+    "Output Type": payload.get("output_type", "Not provided"),
+    "Target Audience": payload.get("target_audience", "Not provided"),
+    "Tone": payload.get("tone", "Not provided"),
+    "Length": payload.get("length", "Not provided"),
+    "Language": payload.get("language", "Not provided")
+}
+
+for label, value in preferences.items():
+    st.markdown(f"**{label}:** {value}")
+
+
+st.divider()
+
+
+# -----------------------------
+# NAVIGATION
+# -----------------------------
+col1, col2, col3 = st.columns([1, 10, 2])
+
+with col1:
+    if st.button("← Back"):
+        st.session_state.current_step = 3
+        st.switch_page("pages/step3_preferences.py")
+
+with col3:
+    generate_clicked = st.button("Generate Content", use_container_width=True)
+
+
+# -----------------------------
+# GENERATE CONTENT
+# -----------------------------
+if generate_clicked:
+    missing_fields = []
+
+    if not content_brief:
+        missing_fields.append("Content analysis is missing.")
+
+    if not payload.get("platform"):
+        missing_fields.append("Platform is missing.")
+
+    if not payload.get("output_type"):
+        missing_fields.append("Output type is missing.")
+
+    if not payload.get("target_audience"):
+        missing_fields.append("Target audience is missing.")
+
+    if not payload.get("tone"):
+        missing_fields.append("Tone is missing.")
+
+    if not payload.get("length"):
+        missing_fields.append("Length is missing.")
+
+    if not payload.get("language"):
+        missing_fields.append("Language is missing.")
+
+    if missing_fields:
+        for error in missing_fields:
+            st.error(error)
+        st.stop()
+
+    with st.spinner("Generating final content..."):
+        time.sleep(2)
+
+        # Replace this later with your actual generator service.
+        generated_content = f"""
+Draft {payload.get("output_type")} for {payload.get("platform")}
+
+Target Audience:
+{payload.get("target_audience")}
+
+Tone:
+{payload.get("tone")}
+
+Length:
+{payload.get("length")}
+
+Language:
+{payload.get("language")}
+
+Based on Content Brief:
+{content_brief}
+"""
+
+        st.session_state.generated_content = generated_content
+
+        update_payload({
+            "generated_content": generated_content
+        })
+
+    st.success("Content generated successfully!")
+
+
+# -----------------------------
+# GENERATED CONTENT PREVIEW
+# -----------------------------
+if st.session_state.generated_content:
+    st.subheader("Generated Content")
+
+    st.text_area(
+        "Output",
+        value=st.session_state.generated_content,
+        height=300
+    )
+
+    st.divider()
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
         if st.button("Revise Content", use_container_width=True):
             st.session_state.revise_trigger = True
-    if not st.session_state.image_trigger:
+
+    with col2:
         if st.button("Generate Image", use_container_width=True):
             st.session_state.image_trigger = True
-    if st.button("Start a New Content", use_container_width=True):
-        st.session_state.new_content_trigger = True
+
+    with col3:
+        if st.button("Start New Content", use_container_width=True):
+            st.session_state.new_content_trigger = True
+
 
 # -----------------------------
-# REVISION CHATBOT
+# REVISION AREA
 # -----------------------------
 if st.session_state.revise_trigger:
-    st.info("Hi, I'm Atomize your content assistant! Tell me how you'd like to revise your content.")
-    revision_text = st.text_area(" ", placeholder="Type your revision instructions here...")
+    st.info("Tell AtomizeAI how you want to revise the generated content.")
+
+    revision_text = st.text_area(
+        "Revision Instructions",
+        placeholder="e.g., Make it shorter, more persuasive, and use Taglish."
+    )
+
     if st.button("Apply Revision", use_container_width=True):
-        st.session_state.llm_prompt_inputs["revision"] = revision_text
-        st.success("Revision applied!")
-        st.text_area("Revised Content Preview:", value=revision_text or "Original content preview")
+        update_payload({
+            "revision_instruction": revision_text
+        })
+
+        st.success("Revision instruction saved. You can connect this to your revision model next.")
+
 
 # -----------------------------
-# IMAGE GENERATION PLACEHOLDER
+# IMAGE GENERATION AREA
 # -----------------------------
 if st.session_state.image_trigger:
-    st.info("AI Image generated (placeholder)")
-    st.image("https://via.placeholder.com/400x300.png?text=Generated+Image", use_column_width=True)
+    st.info("Image generation will be connected here later.")
+
 
 # -----------------------------
 # START NEW CONTENT
 # -----------------------------
 if st.session_state.new_content_trigger:
-    for key in ["generate_trigger","revise_trigger","image_trigger","new_content_trigger"]:
+    keys_to_clear = [
+        "generate_trigger",
+        "revise_trigger",
+        "image_trigger",
+        "new_content_trigger",
+        "generated_content",
+        "ai_payload",
+        "article_text",
+        "uploaded_file",
+        "main_topic",
+        "keywords",
+        "background",
+        "key_message",
+        "target_audience"
+    ]
+
+    for key in keys_to_clear:
         if key in st.session_state:
             del st.session_state[key]
+
     st.session_state.current_step = 1
-    st.session_state.llm_prompt_inputs = {}
-    st.experimental_rerun()
+    st.switch_page("pages/step1_home.py")
+
+
+# -----------------------------
+# DEBUG PAYLOAD
+# -----------------------------
+with st.expander("Debug payload"):
+    st.json(get_payload(), expanded=True)
