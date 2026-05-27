@@ -32,6 +32,9 @@ def analyze_repurpose_input(
     uploaded_file_type = uploaded_file.type if uploaded_file else None
     uploaded_file_size = uploaded_file.size if uploaded_file else None
 
+    # -----------------------------
+    # IMAGE FILE
+    # -----------------------------
     if uploaded_file is not None and is_image_file(uploaded_file):
         image_brief = analyze_image_for_repurposing(
             uploaded_file=uploaded_file,
@@ -49,6 +52,9 @@ def analyze_repurpose_input(
             "content_brief": image_brief
         }
 
+    # -----------------------------
+    # DOCUMENT FILE
+    # -----------------------------
     extracted_file_text = ""
 
     if uploaded_file is not None:
@@ -57,6 +63,15 @@ def analyze_repurpose_input(
 
         extracted_file_text = extract_text_from_uploaded_file(uploaded_file)
 
+        if not extracted_file_text or not extracted_file_text.strip():
+            raise ValueError(
+                "No readable text was extracted from the uploaded file. "
+                "Please upload a text-based PDF, DOCX, TXT file, or paste the content manually."
+            )
+
+    # -----------------------------
+    # COMBINE TEXT
+    # -----------------------------
     if article_text and extracted_file_text:
         source_type = "text_and_file"
         combined_text = f"""
@@ -73,11 +88,17 @@ UPLOADED FILE CONTENT:
         source_type = "file"
         combined_text = extracted_file_text
 
+    if not combined_text or not combined_text.strip():
+        raise ValueError("No content found to analyze.")
+
     content_brief = summarize_content_for_repurposing(
         content_text=combined_text,
         router_state=router_state,
         source_type=source_type
     )
+
+    if not content_brief or not content_brief.strip():
+        raise ValueError("The content analyzer returned an empty analysis.")
 
     return {
         "content_path": "repurpose",

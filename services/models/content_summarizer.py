@@ -1,4 +1,3 @@
-import time
 import ollama
 
 
@@ -6,10 +5,50 @@ MODEL_NAME = "qwen3:8b"
 DEBUG_ANALYZER = True
 
 
-def debug_print(label, start_time):
+def debug_print(message):
     if DEBUG_ANALYZER:
-        elapsed = time.perf_counter() - start_time
-        print(f"[DEBUG] {label}: {elapsed:.2f} seconds")
+        print(f"[CONTENT ANALYZER DEBUG] {message}")
+
+
+def clean_analysis_response(text: str) -> str:
+    if not text:
+        return ""
+
+    text = text.strip()
+
+    if "</think>" in text:
+        text = text.split("</think>")[-1].strip()
+
+    text = text.replace("Analysis:", "").strip()
+
+    return text
+
+
+def build_fallback_analysis(content_text: str, source_type: str) -> str:
+    preview = content_text[:1200].strip()
+
+    return f"""
+Content summary:
+The uploaded {source_type} contains readable content, but the AI analyzer returned an empty response.
+
+Main topic:
+Needs manual review from extracted content.
+
+Key message or purpose:
+Needs manual review from extracted content.
+
+Important details:
+{preview}
+
+Notable phrases or exact wording:
+See important details above.
+
+Facts, offers, products, or names mentioned:
+Needs manual review.
+
+Missing or unclear information:
+The analyzer response was empty, so this is a fallback brief.
+""".strip()
 
 
 def summarize_content_for_repurposing(
@@ -17,8 +56,6 @@ def summarize_content_for_repurposing(
     router_state: dict | None = None,
     source_type: str = "text"
 ) -> str:
-    total_start = time.perf_counter()
-
     router_state = router_state or {}
 
     if not content_text or not content_text.strip():
@@ -27,23 +64,18 @@ def summarize_content_for_repurposing(
     max_chars = 6000
     trimmed_content = content_text[:max_chars]
 
-    debug_print(
-        f"Content trimmed from {len(content_text)} to {len(trimmed_content)} chars",
-        total_start
-    )
-
     system_prompt = """
 You are a content analysis assistant.
 
-Your job is to analyze the provided content and extract only the important source information.
+Analyze the provided content and extract only the important source information.
 
 Do not create captions.
 Do not create hooks.
 Do not suggest content angles.
-Do not infer target audience unless explicitly stated.
 Do not generate marketing copy.
 
-Return only this format:
+Return a visible response only.
+Return exactly this format:
 
 Content summary:
 Main topic:
@@ -55,18 +87,17 @@ Missing or unclear information:
 """
 
     user_prompt = f"""
+/no_think
+
 Source type:
 {source_type}
 
 Content:
 {trimmed_content}
 
-Analyze the content and return only the source information.
+Task:
+Analyze the content and return the structured source information.
 """
-
-    debug_print(f"Prompt built ({len(user_prompt)} chars)", total_start)
-
-    ollama_start = time.perf_counter()
 
     response = ollama.chat(
         model=MODEL_NAME,
@@ -76,11 +107,19 @@ Analyze the content and return only the source information.
         ],
         options={
             "temperature": 0.1,
-            "num_predict": 350
+            "num_predict": 450
         }
     )
 
-    debug_print("Ollama chat completed", ollama_start)
-    debug_print("Total summarizer duration", total_start)
+    debug_print(f"Raw Ollama response: {response}")
 
-    return response["message"]["content"]
+    analysis = response.get("message", {}).get("content", "")
+    analysis = clean_analysis_response(analysis)
+
+    debug_print(f"Cleaned analysis: {analysis}")
+
+    if not analysis:
+        debug_print("Analyzer returned empty response. Using fallback analysis.")
+        analysis = build_fallback_analysis(trimmed_content, source_type)
+
+    return analysis
