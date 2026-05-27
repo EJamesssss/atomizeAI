@@ -28,31 +28,29 @@ def analyze_image_for_repurposing(uploaded_file, router_state=None) -> str:
 
     try:
         system_prompt = """
-You are an image analysis assistant for a content repurposing application.
+You are an image analysis assistant.
 
-Analyze the uploaded image and create a concise content brief.
+Your job is to describe and extract only the visible information from the uploaded image.
 
-Do not create the final caption.
-Do not create the final social media post.
+Do not create captions.
+Do not create hooks.
+Do not suggest content angles.
+Do not infer target audience unless explicitly visible.
+Do not generate marketing copy.
 
 Return only this format:
 
-Visible elements:
-Main subject:
-Text visible in image:
-Brand/product clues:
-Possible message:
-Target audience clues:
-Suggested content angles:
-Suggested hook ideas:
-Avoid / do not misrepresent:
+Image summary:
+Main visible subject:
+Visible text:
+Important visual details:
+Products, brands, or names visible:
+Colors, layout, or design notes:
+Missing or unclear information:
 """
 
-        user_prompt = f"""
-Router state:
-{router_state}
-
-Analyze this image for content repurposing.
+        user_prompt = """
+Analyze this image and return only the visible source information.
 """
 
         ollama_start = time.perf_counter()
@@ -71,8 +69,8 @@ Analyze this image for content repurposing.
                 }
             ],
             options={
-                "temperature": 0.2,
-                "num_predict": 400
+                "temperature": 0.1,
+                "num_predict": 350
             }
         )
 

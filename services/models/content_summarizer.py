@@ -1,12 +1,8 @@
+import time
 import ollama
 
 
-MODEL_NAME = "qwen3:8b"
-
-import time
-
-### DEBUGGER
-
+MODEL_NAME = "qwen2.5:7b"
 DEBUG_ANALYZER = True
 
 
@@ -15,8 +11,6 @@ def debug_print(label, start_time):
         elapsed = time.perf_counter() - start_time
         print(f"[DEBUG] {label}: {elapsed:.2f} seconds")
 
-
-### DEBUGGER ends here
 
 def summarize_content_for_repurposing(
     content_text: str,
@@ -30,49 +24,47 @@ def summarize_content_for_repurposing(
     if not content_text or not content_text.strip():
         raise ValueError("No content found to summarize.")
 
-    max_chars = 12000
+    max_chars = 6000
     trimmed_content = content_text[:max_chars]
 
-    debug_print(f"Content trimmed from {len(content_text)} to {len(trimmed_content)} chars", total_start)
+    debug_print(
+        f"Content trimmed from {len(content_text)} to {len(trimmed_content)} chars",
+        total_start
+    )
 
     system_prompt = """
-You are a content analysis assistant for a content repurposing application.
+You are a content analysis assistant.
 
-Your job is to read provided content and convert it into a clean content brief.
+Your job is to analyze the provided content and extract only the important source information.
 
-Do not create the final caption yet.
-Do not create the final social media post yet.
-Do not create the final output yet.
+Do not create captions.
+Do not create hooks.
+Do not suggest content angles.
+Do not infer target audience unless explicitly stated.
+Do not generate marketing copy.
 
-Return a structured summary with:
-1. Main topic
-2. Key message
-3. Important details
-4. Useful quotes or phrases, if any
-5. Target audience clues
-6. Suggested content angles
-7. Suggested social media hook ideas
-8. What should be avoided or not misrepresented
+Return only this format:
 
-Be concise but complete.
+Content summary:
+Main topic:
+Key message or purpose:
+Important details:
+Notable phrases or exact wording:
+Facts, offers, products, or names mentioned:
+Missing or unclear information:
 """
 
     user_prompt = f"""
-USER PREFERENCES / ROUTER STATE:
-{router_state}
-
-SOURCE TYPE:
+Source type:
 {source_type}
 
-CONTENT:
+Content:
 {trimmed_content}
 
-TASK:
-Summarize this content so it can be repurposed based on the user's preferences.
+Analyze the content and return only the source information.
 """
 
-    prompt_start = time.perf_counter()
-    debug_print(f"Prompt built ({len(user_prompt)} chars)", prompt_start)
+    debug_print(f"Prompt built ({len(user_prompt)} chars)", total_start)
 
     ollama_start = time.perf_counter()
 
@@ -83,8 +75,8 @@ Summarize this content so it can be repurposed based on the user's preferences.
             {"role": "user", "content": user_prompt},
         ],
         options={
-            "temperature": 0.2,
-            "num_predict": 700
+            "temperature": 0.1,
+            "num_predict": 350
         }
     )
 
