@@ -48,26 +48,85 @@ st.markdown("**WHAT DO YOU WANT TO DO TODAY?**", width="stretch")
 st.info("Both paths lead to the same AI engine. Choose based on whether you already have content or not.")
 
 # -----------------------------
-# OPTION CARDS - "repurpose or no_idea"
+# CARD STYLE
 # -----------------------------
+st.markdown(
+    """
+    <style>
+    .choice-card-content {
+        min-height: 190px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+    }
 
-col1, col2 = st.columns(2)
+    .choice-card-icon {
+        font-size: 34px;
+        margin-bottom: 22px;
+    }
 
+    .choice-card-title {
+        font-size: 24px;
+        font-weight: 700;
+        line-height: 1.2;
+        margin-bottom: 20px;
+    }
+
+    .choice-card-desc {
+        font-size: 16px;
+        line-height: 1.5;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+
+# -----------------------------
+# OPTION CARDS
+# -----------------------------
+col1, col2 = st.columns(2, gap="large")
 
 with col1:
-    with st.container(border = True):
-        st.markdown("## 🔄", text_alignment='center')
-        st.markdown("#### Repurpose Existing Content", text_alignment='center')
-        st.markdown("Transform contents you already have.", text_alignment='center', width="stretch")
+    with st.container(border=True):
+        st.markdown(
+            """
+            <div class="choice-card-content">
+                <div class="choice-card-icon">🔄</div>
+                <div class="choice-card-title">Repurpose Existing Content</div>
+                <div class="choice-card-desc">Transform contents you already have.</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
         if st.button("Choose Repurpose", use_container_width=True):
-            update_payload({"action": "repurpose"})
-            st.switch_page("pages/step2_repurpose.py")  # Navigate to Step 2 Repurpose page
+            update_payload({
+                "action": "repurpose",
+                "content_path": "repurpose"
+            })
+
+            st.session_state.current_step = 2
+            st.switch_page("pages/step2_repurpose.py")
 
 with col2:
-    with st.container(border = True):
-        st.markdown("## 💡", text_alignment='center')
-        st.markdown("#### No Idea", text_alignment='center')
-        st.markdown("Answer a few questions and we’ll build your content from scratch.", text_alignment='center', width="stretch")
+    with st.container(border=True):
+        st.markdown(
+            """
+            <div class="choice-card-content">
+                <div class="choice-card-icon">💡</div>
+                <div class="choice-card-title">No Idea</div>
+                <div class="choice-card-desc">Answer a few questions and we’ll build your content from scratch.</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
         if st.button("Choose No Idea Yet", use_container_width=True):
-            update_payload({"action": "no_idea"})
-            st.switch_page("pages/step2_no_idea.py")  # Navigate to Step 2 No Idea page
+            update_payload({
+                "action": "no_idea",
+                "content_path": "no_idea"
+            })
+
+            st.session_state.current_step = 2
+            st.switch_page("pages/step2_no_idea.py")
