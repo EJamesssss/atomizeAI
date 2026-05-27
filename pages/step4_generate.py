@@ -1,11 +1,15 @@
 import streamlit as st
 
-from utils.clipboard import copy_to_clipboard_button
 from utils.session import get_payload, update_payload
+from utils.clipboard import copy_to_clipboard_button
+
 from services.models.caption_generator import (
     generate_content_from_payload,
     revise_content_from_payload
 )
+
+from services.comfyui.image_service import generate_image_from_payload
+from services.comfyui.client import get_image_bytes
 
 
 st.session_state.current_step = 4
@@ -31,6 +35,9 @@ if "revision_success_message" not in st.session_state:
 
 if "generation_success_message" not in st.session_state:
     st.session_state.generation_success_message = False
+
+if "image_success_message" not in st.session_state:
+    st.session_state.image_success_message = False
 
 
 # -----------------------------
@@ -240,6 +247,10 @@ if st.session_state.revision_success_message:
     st.success("Content revised successfully!")
     st.session_state.revision_success_message = False
 
+if st.session_state.image_success_message:
+    st.success("Image generated successfully!")
+    st.session_state.image_success_message = False
+
 
 # -----------------------------
 # GENERATED CONTENT PREVIEW
@@ -254,7 +265,10 @@ if st.session_state.generated_content:
         disabled=True
     )
 
-    copy_to_clipboard_button(st.session_state.generated_content)
+    copy_to_clipboard_button(
+        st.session_state.generated_content,
+        "Copy Generated Content"
+    )
 
     st.divider()
 
@@ -263,10 +277,12 @@ if st.session_state.generated_content:
     with col1:
         if st.button("Revise Content", use_container_width=True):
             st.session_state.revise_trigger = True
+            st.session_state.image_trigger = False
 
     with col2:
         if st.button("Generate Image", use_container_width=True):
             st.session_state.image_trigger = True
+            st.session_state.revise_trigger = False
 
     with col3:
         if st.button("Start New Content", use_container_width=True):
@@ -319,7 +335,85 @@ if st.session_state.revise_trigger:
 # IMAGE GENERATION AREA
 # -----------------------------
 if st.session_state.image_trigger:
-    st.info("Image generation will be connected here later.")
+    st.info("Generate an image based on the generated content and selected preferences.")
+
+    if st.button("Run Image Generation", use_container_width=True):
+        if not get_payload().get("generated_content"):
+            st.error("Generated content is required before generating an image.")
+            st.stop()
+
+        try:
+            with st.spinner("Generating image prompt and sending workflow to ComfyUI..."):
+                image_result = generate_image_from_payload(get_payload())
+
+                image_prompt = image_result["image_prompt"]
+                workflow_prompt = image_result["workflow_prompt"]
+
+                update_payload({
+                    "image_prompt": image_prompt,
+                    "workflow_prompt": workflow_prompt,
+                    "generated_images": image_result["images"],
+                    "comfyui_prompt_id": image_result["prompt_id"]
+                })
+            st.session_state.image_success_message = True
+            st.rerun()
+
+        except Exception as error:
+            st.error(f"Failed to generate image: {error}")
+
+
+# -----------------------------
+# PROMPT SENT TO COMFYUI
+# -----------------------------
+payload = get_payload()
+
+if payload.get("image_prompt"):
+    with st.expander("View prompt sent to ComfyUI", expanded=True):
+        st.markdown("**Qwen-generated image prompt**")
+        st.code(payload.get("image_prompt"), language="text")
+
+        copy_to_clipboard_button(
+            payload.get("image_prompt"),
+            "Copy Image Prompt"
+        )
+
+        if payload.get("workflow_prompt"):
+            st.markdown("**Prompt inserted into ComfyUI workflow node**")
+            st.code(payload.get("workflow_prompt"), language="text")
+
+
+payload = get_payload()
+
+if payload.get("image_prompt"):
+    with st.expander("View prompt sent to ComfyUI", expanded=True):
+        st.markdown("**Qwen-generated image prompt**")
+        st.code(payload.get("image_prompt"), language="text")
+
+        if payload.get("workflow_prompt"):
+            st.markdown("**Prompt inserted into ComfyUI workflow node**")
+            st.code(payload.get("workflow_prompt"), language="text")
+# -----------------------------
+# GENERATED IMAGE DISPLAY
+# -----------------------------
+payload = get_payload()
+generated_images = payload.get("generated_images", [])
+
+if generated_images:
+    st.subheader("Generated Image")
+
+    for image_data in generated_images:
+        try:
+            image_bytes = get_image_bytes(image_data)
+
+            st.image(
+                image_bytes,
+                caption=image_data["filename"],
+                use_container_width=True
+            )
+
+        except Exception as error:
+            st.error(f"Failed to load generated image: {error}")
+            st.write(image_data)
 
 
 # -----------------------------
@@ -344,7 +438,8 @@ if st.session_state.new_content_trigger:
         "repurpose_analyzed_payload",
         "revision_instruction_input",
         "revision_success_message",
-        "generation_success_message"
+        "generation_success_message",
+        "image_success_message"
     ]
 
     for key in keys_to_clear:
