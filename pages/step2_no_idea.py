@@ -1,6 +1,6 @@
 import streamlit as st
 from utils.session import init_payload, update_payload, get_payload
-
+from utils.settings import DEBUG_MODE
 
 # -----------------------------
 # SESSION STATE INITIALIZATION
@@ -212,5 +212,6 @@ Additional details may be guided by the user's Step 3 preferences.
 # -----------------------------
 # DEBUG PAYLOAD
 # -----------------------------
-with st.expander("Debug payload"):
-    st.json(get_payload(), expanded=False)
+if DEBUG_MODE:
+    with st.expander("Debug payload"):
+        st.json(get_payload(), expanded=True)

@@ -3,9 +3,11 @@ import tempfile
 import time
 import ollama
 
+from utils.settings import DEBUG_MODE
+
 
 VISION_MODEL_NAME = "qwen2.5vl:7b"
-DEBUG_ANALYZER = True
+DEBUG_ANALYZER = DEBUG_MODE
 
 
 def debug_print(label, start_time):

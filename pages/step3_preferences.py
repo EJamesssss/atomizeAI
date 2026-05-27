@@ -1,5 +1,6 @@
 import streamlit as st
 from utils.session import get_payload, update_payload
+from utils.settings import DEBUG_MODE
 
 
 st.session_state.current_step = 3
@@ -184,5 +185,6 @@ with col3:
 # -----------------------------
 # DEBUG PAYLOAD
 # -----------------------------
-with st.expander("Debug payload"):
-    st.json(get_payload(), expanded=True)
+if DEBUG_MODE:
+    with st.expander("Debug payload"):
+        st.json(get_payload(), expanded=True)

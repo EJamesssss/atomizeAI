@@ -1,8 +1,10 @@
 import ollama
 
+from utils.settings import DEBUG_MODE
+
 
 MODEL_NAME = "qwen3:8b"
-DEBUG_ANALYZER = True
+DEBUG_ANALYZER = DEBUG_MODE
 
 
 def debug_print(message):

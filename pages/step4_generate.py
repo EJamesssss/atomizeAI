@@ -10,6 +10,7 @@ from services.models.caption_generator import (
 
 from services.comfyui.image_service import generate_image_from_payload
 from services.comfyui.client import get_image_bytes
+from utils.settings import DEBUG_MODE
 
 
 st.session_state.current_step = 4
@@ -367,10 +368,14 @@ if st.session_state.image_trigger:
 # -----------------------------
 payload = get_payload()
 
-if payload.get("image_prompt"):
-    with st.expander("View prompt sent to ComfyUI", expanded=True):
+if DEBUG_MODE and payload.get("image_prompt"):
+    with st.expander("View prompt sent to ComfyUI", expanded=False):
         st.markdown("**Qwen-generated image prompt**")
         st.code(payload.get("image_prompt"), language="text")
+
+        if payload.get("workflow_prompt"):
+            st.markdown("**Prompt inserted into ComfyUI workflow node**")
+            st.code(payload.get("workflow_prompt"), language="text")
 
         copy_to_clipboard_button(
             payload.get("image_prompt"),
@@ -453,5 +458,6 @@ if st.session_state.new_content_trigger:
 # -----------------------------
 # DEBUG PAYLOAD
 # -----------------------------
-with st.expander("Debug payload"):
-    st.json(get_payload(), expanded=True)
+if DEBUG_MODE:
+    with st.expander("Debug payload"):
+        st.json(get_payload(), expanded=True)

@@ -1,8 +1,9 @@
 import ollama
 
+from utils.settings import DEBUG_MODE
 
 MODEL_NAME = "qwen3:8b"
-DEBUG_IMAGE_PROMPT = True
+DEBUG_IMAGE_PROMPT = DEBUG_MODE
 
 
 def debug_print(message):

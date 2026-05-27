@@ -4,12 +4,13 @@ import time
 
 from services.models.repurpose_analyzer import analyze_repurpose_input
 from utils.session import get_payload, update_payload
+from utils.settings import DEBUG_MODE
 
 
 # -----------------------------
 # DEBUGGER
 # -----------------------------
-DEBUG_ANALYZER = True
+DEBUG_ANALYZER = DEBUG_MODE
 
 
 def debug_time(label, start_time):
@@ -238,5 +239,6 @@ if st.session_state.step2_next_trigger:
 # -----------------------------
 # DEBUG PAYLOAD
 # -----------------------------
-with st.expander("Debug payload"):
-    st.json(get_payload(), expanded=True)
+if DEBUG_MODE:
+    with st.expander("Debug payload"):
+        st.json(get_payload(), expanded=True)
