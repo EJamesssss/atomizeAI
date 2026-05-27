@@ -9,9 +9,6 @@ init_payload()
 
 st.session_state.current_step = 2
 
-if "current_step" not in st.session_state:
-    st.session_state.current_step = 2
-
 if "main_topic" not in st.session_state:
     st.session_state.main_topic = ""
 
@@ -86,31 +83,30 @@ st.info(
     "The more specific you are, the better AtomizeAI can assist you in creating tailored content."
 )
 
-
 st.session_state.main_topic = st.text_input(
-    "Main Topic / Idea:",
+    "Main Topic / Idea *",
     placeholder="e.g., Skincare product launch",
     max_chars=150,
     value=st.session_state.main_topic
 )
 
 st.session_state.keywords = st.text_input(
-    "Keywords / Key Phrases:",
+    "Keywords / Key Phrases *",
     placeholder="e.g., affordable, glowing skin, Filipino seller",
     max_chars=250,
     value=st.session_state.keywords
 )
 
 st.session_state.background = st.text_area(
-    "Background / Description:",
+    "Background / Description *",
     placeholder="e.g., This is a new skincare product targeting online sellers in the Philippines.",
     max_chars=2000,
-    height=100,
+    height=120,
     value=st.session_state.background
 )
 
 st.session_state.key_message = st.text_input(
-    "Key Message / Call-to-Action:",
+    "Key Message / Call-to-Action *",
     placeholder="e.g., Promote a new skincare product for Filipino online sellers",
     max_chars=500,
     value=st.session_state.key_message
@@ -120,16 +116,22 @@ st.divider()
 
 
 # -----------------------------
+# VALIDATION MESSAGE AREA
+# -----------------------------
+error_placeholder = st.empty()
+
+
+# -----------------------------
 # NAVIGATION BUTTONS
 # -----------------------------
-col1, col2, col3 = st.columns([1, 16, 1])
+col1, col2, col3 = st.columns([2, 8, 2])
 
 with col1:
-    if st.button("← Back"):
+    if st.button("← Back", use_container_width=True):
         st.session_state.step2_noidea_back = True
 
 with col3:
-    if st.button("Next →"):
+    if st.button("Next →", use_container_width=True):
         st.session_state.step2_noidea_next = True
 
 
@@ -143,17 +145,67 @@ if st.session_state.step2_noidea_back:
 
 
 if st.session_state.step2_noidea_next:
-    st.session_state.current_step = 3
     st.session_state.step2_noidea_next = False
+
+    required_errors = []
+
+    if not st.session_state.main_topic.strip():
+        required_errors.append("Main Topic / Idea is required.")
+
+    if not st.session_state.keywords.strip():
+        required_errors.append("Keywords / Key Phrases is required.")
+
+    if not st.session_state.background.strip():
+        required_errors.append("Background / Description is required.")
+
+    if not st.session_state.key_message.strip():
+        required_errors.append("Key Message / Call-to-Action is required.")
+
+    if required_errors:
+        with error_placeholder.container():
+            for error in required_errors:
+                st.error(error)
+        st.stop()
+
+    main_topic = st.session_state.main_topic.strip()
+    keywords = st.session_state.keywords.strip()
+    background = st.session_state.background.strip()
+    key_message = st.session_state.key_message.strip()
+
+    content_brief = f"""
+Content summary:
+The user wants to create new content from scratch based on their provided idea.
+
+Main topic:
+{main_topic}
+
+Key message or purpose:
+{key_message}
+
+Important details:
+{background}
+
+Keywords or key phrases:
+{keywords}
+
+Facts, offers, products, or names mentioned:
+Use only the details provided by the user. Do not invent unsupported claims.
+
+Missing or unclear information:
+Additional details may be guided by the user's Step 3 preferences.
+""".strip()
 
     update_payload({
         "content_path": "no_idea",
-        "main_topic": st.session_state.main_topic,
-        "keywords": st.session_state.keywords,
-        "background": st.session_state.background,
-        "key_message": st.session_state.key_message
+        "source_type": "user_idea",
+        "main_topic": main_topic,
+        "keywords": keywords,
+        "background": background,
+        "key_message": key_message,
+        "content_brief": content_brief
     })
 
+    st.session_state.current_step = 3
     st.switch_page("pages/step3_preferences.py")
 
 
