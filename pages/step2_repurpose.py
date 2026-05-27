@@ -1,6 +1,7 @@
 import streamlit as st
 
-from utils.session import get_payload
+from services.models.repurpose_analyzer import analyze_repurpose_input
+from utils.session import get_payload, update_payload
 
 st.session_state.current_step = 2
 
@@ -75,7 +76,7 @@ uploaded_file = st.file_uploader(
     type=["jpg","png","pdf","docx"],
     max_upload_size=10
 )
-if uploaded_file:
+if uploaded_file is not None:
     st.session_state.uploaded_file = uploaded_file
 
 # -----------------------------
@@ -101,11 +102,26 @@ if st.session_state.step2_back_trigger:
 
 # Next to Step 3
 if st.session_state.step2_next_trigger:
-    st.session_state.current_step = 3
     st.session_state.step2_next_trigger = False
 
+    article_text = st.session_state.article_text.strip()
+    uploaded_file = st.session_state.uploaded_file
 
-    st.switch_page("pages/step3_preferences.py")
+    try:
+        with st.spinner("Analyzing your content with Ollama..."):
+            analyzed_payload = analyze_repurpose_input(
+                article_text=article_text,
+                uploaded_file=uploaded_file,
+                router_state=get_payload()
+            )
+
+        update_payload(analyzed_payload)
+
+        st.session_state.current_step = 3
+        st.switch_page("pages/step3_preferences.py")
+
+    except Exception as error:
+        st.error(f"Failed to analyze content: {error}")
 
 
 st.json(get_payload(), expanded=True)
