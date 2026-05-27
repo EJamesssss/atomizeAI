@@ -176,10 +176,10 @@ st.divider()
 # -----------------------------
 # NAVIGATION AND GENERATE BUTTON
 # -----------------------------
-col1, col2, col3 = st.columns([1, 8, 3])
+col1, col2, col3 = st.columns([2, 8, 3])
 
 with col1:
-    if st.button("← Back"):
+    if st.button("← Back", use_container_width=True):
         st.session_state.current_step = 3
         st.switch_page("pages/step3_preferences.py")
 

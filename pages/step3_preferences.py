@@ -89,23 +89,31 @@ st.session_state.target_audience = st.text_input(
     value=st.session_state.target_audience
 )
 
-st.session_state.tone = st.radio(
-    "Tone *",
-    options=["Friendly", "Professional", "Casual", "Persuasive", "Educational"],
-    index=["Friendly", "Professional", "Casual", "Persuasive", "Educational"].index(st.session_state.tone)
-)
+# -----------------------------
+# TONE / LENGTH / LANGUAGE
+# -----------------------------
+col_tone, col_length, col_language = st.columns(3)
 
-st.session_state.length = st.radio(
-    "Length *",
-    options=["Short", "Medium", "Long"],
-    index=["Short", "Medium", "Long"].index(st.session_state.length)
-)
+with col_tone:
+    st.session_state.tone = st.radio(
+        "Tone *",
+        options=["Friendly", "Professional", "Casual", "Persuasive", "Educational"],
+        index=["Friendly", "Professional", "Casual", "Persuasive", "Educational"].index(st.session_state.tone)
+    )
 
-st.session_state.language = st.radio(
-    "Language *",
-    options=["English", "Tagalog", "Taglish"],
-    index=["English", "Tagalog", "Taglish"].index(st.session_state.language)
-)
+with col_length:
+    st.session_state.length = st.radio(
+        "Length *",
+        options=["Short", "Medium", "Long"],
+        index=["Short", "Medium", "Long"].index(st.session_state.length)
+    )
+
+with col_language:
+    st.session_state.language = st.radio(
+        "Language *",
+        options=["English", "Tagalog", "Taglish"],
+        index=["English", "Tagalog", "Taglish"].index(st.session_state.language)
+    )
 
 
 # -----------------------------
@@ -117,10 +125,10 @@ error_placeholder = st.empty()
 # -----------------------------
 # NAVIGATION BUTTONS
 # -----------------------------
-col1, col2, col3 = st.columns([1, 10, 1])
+col1, col2, col3 = st.columns([2, 8, 2])
 
 with col1:
-    if st.button("← Back"):
+    if st.button("← Back", use_container_width=True):
         st.session_state.current_step = 2
 
         payload = get_payload()
@@ -133,7 +141,7 @@ with col1:
             st.switch_page("pages/step1_home.py")
 
 with col3:
-    if st.button("Next →"):
+    if st.button("Next →", use_container_width=True):
         required_errors = []
 
         if not st.session_state.platform:

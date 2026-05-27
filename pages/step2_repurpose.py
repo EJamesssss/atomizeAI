@@ -115,12 +115,14 @@ if uploaded_file is not None:
 # -----------------------------
 # NAVIGATION BUTTONS
 # -----------------------------
-col1, col2, col3 = st.columns([1,16,1])
+col1, col2, col3 = st.columns([2, 8, 2])
+
 with col1:
-    if st.button("← Back"):
+    if st.button("← Back", use_container_width=True):
         st.session_state.step2_back_trigger = True
+
 with col3:
-    if st.button("Next →"):
+    if st.button("Next →", use_container_width=True):
         st.session_state.step2_next_trigger = True
 
 # -----------------------------
