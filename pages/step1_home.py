@@ -1,5 +1,7 @@
 import streamlit as st
+from utils.session import init_payload, update_payload
 
+init_payload()  # This function ensures that the payload is initialized in session state if it doesn't already exist.
 
 # -----------------------------
 # SESSION STATE INIT
@@ -51,15 +53,14 @@ st.info("Both paths lead to the same AI engine. Choose based on whether you alre
 
 col1, col2 = st.columns(2)
 
+
 with col1:
     with st.container(border = True):
         st.markdown("## 🔄", text_alignment='center')
         st.markdown("#### Repurpose Existing Content", text_alignment='center')
         st.markdown("Transform contents you already have.", text_alignment='center', width="stretch")
         if st.button("Choose Repurpose", use_container_width=True):
-            st.session_state.content_path = "repurpose"
-            st.session_state.current_step = 2
-            st.session_state.llm_prompt_inputs["content_path"] = st.session_state.content_path
+            update_payload({"action": "repurpose"})
             st.switch_page("pages/step2_repurpose.py")  # Navigate to Step 2 Repurpose page
 
 with col2:
@@ -68,8 +69,5 @@ with col2:
         st.markdown("#### No Idea", text_alignment='center')
         st.markdown("Answer a few questions and we’ll build your content from scratch.", text_alignment='center', width="stretch")
         if st.button("Choose No Idea Yet", use_container_width=True):
-            st.session_state.content_path = "no_idea"
-            st.session_state.current_step = 2
-            st.session_state.llm_prompt_inputs["content_path"] = st.session_state.content_path
+            update_payload({"action": "no_idea"})
             st.switch_page("pages/step2_no_idea.py")  # Navigate to Step 2 No Idea page
-    
