@@ -1,7 +1,8 @@
 import streamlit as st
+from utils.session import get_payload, update_payload
 
 
-
+st.session_state.current_step = 3
 
 # Header
 col1, col2 = st.columns([3, 1], width= 'stretch')
@@ -37,12 +38,6 @@ defaults = {
 for key, value in defaults.items():
     if key not in st.session_state:
         st.session_state[key] = value
-
-# Triggers for navigation buttons
-if "step3_back_trigger" not in st.session_state:
-    st.session_state.step3_back_trigger = False
-if "step3_next_trigger" not in st.session_state:
-    st.session_state.step3_next_trigger = False
 
 
 
@@ -125,34 +120,32 @@ st.session_state.language = st.radio(
 # NAVIGATION BUTTONS
 # -----------------------------
 col1, col2, col3 = st.columns([1, 10, 1])
+
 with col1:
     if st.button("← Back"):
-        st.session_state.step3_back_trigger = True
+        st.session_state.current_step = 2
+
+        payload = get_payload()
+
+        if payload.get("content_path") == "repurpose":
+            st.switch_page("pages/step2_repurpose.py")
+        elif payload.get("content_path") == "no_idea":
+            st.switch_page("pages/step2_no_idea.py")
+        else:
+            st.switch_page("pages/step1_home.py")
+
 with col3:
     if st.button("Next →"):
-        st.session_state.step3_next_trigger = True
+        update_payload({
+            "platform": st.session_state.platform,
+            "output_type": st.session_state.output_type,
+            "target_audience": st.session_state.target_audience,
+            "tone": st.session_state.tone,
+            "length": st.session_state.length,
+            "language": st.session_state.language
+        })
 
-# -----------------------------
-# PROCESS TRIGGERS
-# -----------------------------
-# Go back to Step 2
-if st.session_state.step3_back_trigger:
-    st.session_state.current_step = 2
-    st.session_state.step3_back_trigger = False
-    
+        st.session_state.current_step = 4
+        st.switch_page("pages/step4_generate.py")
 
-# Advance to Step 4 and save preferences
-if st.session_state.step3_next_trigger:
-    st.session_state.current_step = 4
-    st.session_state.step3_next_trigger = False
-    st.session_state.content_path = "generate"
-    # Save all Step 3 preferences to llm_prompt_inputs
-    st.session_state.llm_prompt_inputs["step3_preferences"] = {
-        "platform": st.session_state.platform,
-        "output_type": st.session_state.output_type,
-        "target_audience": st.session_state.target_audience,
-        "tone": st.session_state.tone,
-        "length": st.session_state.length,
-        "language": st.session_state.language
-    }
-
+st.json(get_payload(), expanded=True)
