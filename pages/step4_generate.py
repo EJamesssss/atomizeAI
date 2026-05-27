@@ -220,7 +220,7 @@ if generate_clicked:
         st.stop()
 
     try:
-        with st.spinner("Generating final content with Qwen..."):
+        with st.spinner("Generating final content..."):
             generated_content = generate_content_from_payload(payload)
 
         st.session_state.generated_content = generated_content
@@ -343,7 +343,7 @@ if st.session_state.image_trigger:
             st.stop()
 
         try:
-            with st.spinner("Generating image prompt and sending workflow to ComfyUI..."):
+            with st.spinner("Generating image..."):
                 image_result = generate_image_from_payload(get_payload())
 
                 image_prompt = image_result["image_prompt"]

@@ -151,7 +151,7 @@ if st.session_state.step2_next_trigger:
         st.stop()
 
     try:
-        with st.spinner("Analyzing your content with Ollama..."):
+        with st.spinner("Analyzing your content..."):
             analyzer_start = time.perf_counter()
 
             analyzed_payload = analyze_repurpose_input(
