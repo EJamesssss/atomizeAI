@@ -1,5 +1,6 @@
 import streamlit as st
 
+from utils.clipboard import copy_to_clipboard_button
 from utils.session import get_payload, update_payload
 from services.models.caption_generator import (
     generate_content_from_payload,
@@ -252,6 +253,8 @@ if st.session_state.generated_content:
         height=300,
         disabled=True
     )
+
+    copy_to_clipboard_button(st.session_state.generated_content)
 
     st.divider()
 
