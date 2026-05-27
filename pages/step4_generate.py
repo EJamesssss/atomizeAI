@@ -1,7 +1,10 @@
 import streamlit as st
 
 from utils.session import get_payload, update_payload
-from services.models.caption_generator import generate_content_from_payload
+from services.models.caption_generator import (
+    generate_content_from_payload,
+    revise_content_from_payload
+)
 
 
 st.session_state.current_step = 4
@@ -21,6 +24,12 @@ for trigger in [
 
 if "generated_content" not in st.session_state:
     st.session_state.generated_content = ""
+
+if "revision_success_message" not in st.session_state:
+    st.session_state.revision_success_message = False
+
+if "generation_success_message" not in st.session_state:
+    st.session_state.generation_success_message = False
 
 
 # -----------------------------
@@ -71,6 +80,10 @@ st.divider()
 # LOAD PAYLOAD
 # -----------------------------
 payload = get_payload()
+
+# Always sync generated content from payload if available
+if payload.get("generated_content"):
+    st.session_state.generated_content = payload.get("generated_content")
 
 
 # -----------------------------
@@ -208,10 +221,23 @@ if generate_clicked:
             "generated_content": generated_content
         })
 
-        st.success("Content generated successfully!")
+        st.session_state.generation_success_message = True
+        st.rerun()
 
     except Exception as error:
         st.error(f"Failed to generate content: {error}")
+
+
+# -----------------------------
+# SUCCESS MESSAGES
+# -----------------------------
+if st.session_state.generation_success_message:
+    st.success("Content generated successfully!")
+    st.session_state.generation_success_message = False
+
+if st.session_state.revision_success_message:
+    st.success("Content revised successfully!")
+    st.session_state.revision_success_message = False
 
 
 # -----------------------------
@@ -223,7 +249,8 @@ if st.session_state.generated_content:
     st.text_area(
         "Output",
         value=st.session_state.generated_content,
-        height=300
+        height=300,
+        disabled=True
     )
 
     st.divider()
@@ -250,16 +277,39 @@ if st.session_state.revise_trigger:
     st.info("Tell AtomizeAI how you want to revise the generated content.")
 
     revision_text = st.text_area(
-        "Revision Instructions",
-        placeholder="e.g., Make it shorter, more persuasive, and use Taglish."
+        "Revision Instructions *",
+        placeholder="e.g., Make it shorter, more persuasive, and use Taglish.",
+        key="revision_instruction_input"
     )
 
     if st.button("Apply Revision", use_container_width=True):
-        update_payload({
-            "revision_instruction": revision_text
-        })
+        if not revision_text.strip():
+            st.error("Revision instruction is required.")
+            st.stop()
 
-        st.success("Revision instruction saved. You can connect this to your revision model next.")
+        try:
+            with st.spinner("Revising content with Qwen..."):
+                update_payload({
+                    "revision_instruction": revision_text.strip()
+                })
+
+                revised_content = revise_content_from_payload(
+                    payload=get_payload(),
+                    revision_instruction=revision_text.strip()
+                )
+
+                st.session_state.generated_content = revised_content
+
+                update_payload({
+                    "generated_content": revised_content,
+                    "last_revision_instruction": revision_text.strip()
+                })
+
+            st.session_state.revision_success_message = True
+            st.rerun()
+
+        except Exception as error:
+            st.error(f"Failed to revise content: {error}")
 
 
 # -----------------------------
@@ -288,7 +338,10 @@ if st.session_state.new_content_trigger:
         "key_message",
         "target_audience",
         "repurpose_input_hash",
-        "repurpose_analyzed_payload"
+        "repurpose_analyzed_payload",
+        "revision_instruction_input",
+        "revision_success_message",
+        "generation_success_message"
     ]
 
     for key in keys_to_clear:
