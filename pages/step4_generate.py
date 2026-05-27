@@ -1,7 +1,7 @@
 import streamlit as st
-import time
 
 from utils.session import get_payload, update_payload
+from services.models.caption_generator import generate_content_from_payload
 
 
 st.session_state.current_step = 4
@@ -10,7 +10,12 @@ st.session_state.current_step = 4
 # -----------------------------
 # SESSION STATE INIT
 # -----------------------------
-for trigger in ["generate_trigger", "revise_trigger", "image_trigger", "new_content_trigger"]:
+for trigger in [
+    "generate_trigger",
+    "revise_trigger",
+    "image_trigger",
+    "new_content_trigger"
+]:
     if trigger not in st.session_state:
         st.session_state[trigger] = False
 
@@ -41,8 +46,10 @@ step_cols = st.columns(len(steps) * 2 - 1)
 for i, step in enumerate(steps):
     if i == st.session_state.current_step - 1:
         step_cols[i * 2].markdown(
-            f"<div style='text-align:center'><span style='font-size:24px; background-color:#000; color:#fff; "
-            f"border-radius:50%; width:32px; height:32px; display:inline-block; line-height:32px'>{i + 1}</span><br>{step}</div>",
+            f"<div style='text-align:center'>"
+            f"<span style='font-size:24px; background-color:#000; color:#fff; "
+            f"border-radius:50%; width:32px; height:32px; display:inline-block; "
+            f"line-height:32px'>{i + 1}</span><br>{step}</div>",
             unsafe_allow_html=True
         )
     else:
@@ -61,7 +68,7 @@ st.divider()
 
 
 # -----------------------------
-# GET PAYLOAD
+# LOAD PAYLOAD
 # -----------------------------
 payload = get_payload()
 
@@ -70,17 +77,17 @@ payload = get_payload()
 # PAGE INTRO
 # -----------------------------
 st.info(
-    "Review the content analysis and your selected preferences before generating the final content."
+    "Review the content analysis and selected preferences before generating the final content."
 )
 
 
 # -----------------------------
-# SOURCE / ANALYSIS SUMMARY
+# SOURCE / CONTENT ANALYSIS
 # -----------------------------
-st.subheader("Source / Content Analysis")
+st.subheader("Content Analysis")
 
-source_type = payload.get("source_type", "Not provided")
 content_path = payload.get("content_path", "Not provided")
+source_type = payload.get("source_type", "Not provided")
 uploaded_file_name = payload.get("uploaded_file_name")
 uploaded_file_type = payload.get("uploaded_file_type")
 uploaded_file_size = payload.get("uploaded_file_size")
@@ -108,29 +115,25 @@ with col2:
         st.markdown("**File Size:**")
         st.write(f"{uploaded_file_size:,} bytes")
 
-
 if article_text:
     with st.expander("View pasted text"):
         st.write(article_text)
 
-
 if content_brief:
-    st.markdown("### AI Content Analysis")
     st.text_area(
-        "Content Brief",
+        "Analyzed Content Brief",
         value=content_brief,
-        height=300,
+        height=280,
         disabled=True
     )
 else:
     st.warning("No content analysis found. Please go back to Step 2 and analyze your content first.")
 
-
 st.divider()
 
 
 # -----------------------------
-# STEP 3 PREFERENCES SUMMARY
+# SELECTED PREFERENCES
 # -----------------------------
 st.subheader("Selected Preferences")
 
@@ -146,14 +149,13 @@ preferences = {
 for label, value in preferences.items():
     st.markdown(f"**{label}:** {value}")
 
-
 st.divider()
 
 
 # -----------------------------
-# NAVIGATION
+# NAVIGATION AND GENERATE BUTTON
 # -----------------------------
-col1, col2, col3 = st.columns([1, 10, 2])
+col1, col2, col3 = st.columns([1, 8, 3])
 
 with col1:
     if st.button("← Back"):
@@ -170,7 +172,7 @@ with col3:
 if generate_clicked:
     missing_fields = []
 
-    if not content_brief:
+    if not payload.get("content_brief"):
         missing_fields.append("Content analysis is missing.")
 
     if not payload.get("platform"):
@@ -196,28 +198,9 @@ if generate_clicked:
             st.error(error)
         st.stop()
 
-    with st.spinner("Generating final content..."):
-        time.sleep(2)
-
-        # Replace this later with your actual generator service.
-        generated_content = f"""
-Draft {payload.get("output_type")} for {payload.get("platform")}
-
-Target Audience:
-{payload.get("target_audience")}
-
-Tone:
-{payload.get("tone")}
-
-Length:
-{payload.get("length")}
-
-Language:
-{payload.get("language")}
-
-Based on Content Brief:
-{content_brief}
-"""
+    try:
+        with st.spinner("Generating final content with Qwen..."):
+            generated_content = generate_content_from_payload(payload)
 
         st.session_state.generated_content = generated_content
 
@@ -225,7 +208,10 @@ Based on Content Brief:
             "generated_content": generated_content
         })
 
-    st.success("Content generated successfully!")
+        st.success("Content generated successfully!")
+
+    except Exception as error:
+        st.error(f"Failed to generate content: {error}")
 
 
 # -----------------------------
@@ -300,7 +286,9 @@ if st.session_state.new_content_trigger:
         "keywords",
         "background",
         "key_message",
-        "target_audience"
+        "target_audience",
+        "repurpose_input_hash",
+        "repurpose_analyzed_payload"
     ]
 
     for key in keys_to_clear:
